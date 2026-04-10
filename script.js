@@ -115,7 +115,7 @@ function convertCFGtoPDA(){
 
 function buildPDAFromCFG(cfg){
   const transitions = [];
-  transitions.push({id:'init', from:'q_start', input:'ε', stackTop:'ε', to:'q_loop', push:cfg.start+'$', step:1, desc:`Push start var ${cfg.start} & bottom $`});
+  transitions.push({id:'init', from:'q_initial', input:'ε', stackTop:'ε', to:'q_loop', push:cfg.start+'$', step:1, desc:`Push start var ${cfg.start} & bottom $`});
   
   cfg.productions.forEach((p,i) => {
     const pushStr = p.rhs.length ? [...p.rhs].reverse().join('') : 'ε';
@@ -126,10 +126,10 @@ function buildPDAFromCFG(cfg){
     transitions.push({id:`term_${a}`, from:'q_loop', input:a, stackTop:a, to:'q_loop', push:'ε', step:3, desc:`Match '${a}'`});
   });
   
-  transitions.push({id:'accept', from:'q_loop', input:'ε', stackTop:'$', to:'q_accept', push:'ε', step:4, desc:'Accept on empty stack'});
+  transitions.push({id:'accept', from:'q_loop', input:'ε', stackTop:'$', to:'q_final', push:'ε', step:4, desc:'Accept on empty stack'});
   
   return {
-    states:['q_start','q_loop','q_accept'], start:'q_start', accept:['q_accept'], 
+    states:['q_initial','q_loop','q_final'], start:'q_initial', accept:['q_final'], 
     inputAlphabet:cfg.terminals, stackAlphabet:['$', cfg.start, ...cfg.variables, ...cfg.terminals], transitions
   };
 }
@@ -138,11 +138,11 @@ function buildConversionSteps(cfg, pda){
   const steps = [];
   steps.push({
     title:'Step 1: Create States', badge:'SETUP', transIds:[],
-    detail:`Create three states: q_start (init), q_loop (computation), q_accept (final).\nAll derivation logic occurs nondeterministically within q_loop.`
+    detail:`Create three states: q_initial (init), q_loop (computation), q_final (final).\nAll derivation logic occurs nondeterministically within q_loop.`
   });
   steps.push({
     title:'Step 2: Initialize Stack', badge:'INIT', transIds:['init'],
-    detail:`δ(q_start, ε, ε) = (q_loop, ${cfg.start}$)\nPush bottom marker ($) then start variable (${cfg.start}). Stack is now: [${cfg.start}, $]`
+    detail:`δ(q_initial, ε, ε) = (q_loop, ${cfg.start}$)\nPush bottom marker ($) then start variable (${cfg.start}). Stack is now: [${cfg.start}, $]`
   });
   cfg.productions.forEach((p,i) => {
     const pushStr = p.rhs.length ? p.rhs.join('') : 'ε';
@@ -159,7 +159,7 @@ function buildConversionSteps(cfg, pda){
   });
   steps.push({
     title:'Step 5: Accept', badge:'FINISH', transIds:['accept'],
-    detail:`δ(q_loop, ε, $) = (q_accept, ε)\nWhen stack bottoms out ($), derivation is complete. Accept input.`
+    detail:`δ(q_loop, ε, $) = (q_final, ε)\nWhen stack bottoms out ($), derivation is complete. Accept input.`
   });
   return steps;
 }
@@ -254,10 +254,10 @@ function drawPDAStep(pda, wrapId, activeIds, currentIds){
   <marker id="arr-active" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 2L8 5L1 8" fill="none" stroke="${cTeal}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></marker>
   </defs>`;
 
-  const POS = { q_start:{x:120,y:280}, q_loop:{x:425,y:280}, q_accept:{x:730,y:280} };
+  const POS = { q_initial:{x:120,y:280}, q_loop:{x:425,y:280}, q_final:{x:730,y:280} };
   const R = 45;
 
-  out += `<line x1="20" y1="${POS.q_start.y}" x2="${POS.q_start.x - R - 5}" y2="${POS.q_start.y}" stroke="${cLine}" stroke-width="2.5" marker-end="url(#arr-solid)"/>`;
+  out += `<line x1="20" y1="${POS.q_initial.y}" x2="${POS.q_initial.x - R - 5}" y2="${POS.q_initial.y}" stroke="${cLine}" stroke-width="2.5" marker-end="url(#arr-solid)"/>`;
 
   Object.entries(grouped).forEach(([key, trans]) => {
     const [from, to] = key.split('→');
@@ -383,7 +383,7 @@ function simulatePDA(){
 
 function runPDA(pda, inputStr){
   const input = inputStr.split('');
-  const init = {state:'q_start', input:[...input], stack:[], trace:[{state:'q_start', input:inputStr, stack:[], action:'Init'}]};
+  const init = {state:'q_initial', input:[...input], stack:[], trace:[{state:'q_initial', input:inputStr, stack:[], action:'Init'}]};
   const queue = [init]; 
   const visited = new Set();
   
