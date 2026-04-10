@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Automata Engine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Roboto+Mono:wght@500;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  
+  <header class="top-nav">
+    <div class="nav-brand">
+      <div class="brand-logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      </div>
+      <div class="brand-title">Automata<strong>Engine</strong></div>
+    </div>
+    
+    <nav class="nav-menu">
+      <a class="nav-item active" onclick="switchTab('cfg2pda')">CFG to PDA</a>
+      <a class="nav-item" onclick="switchTab('pda2cfg')">PDA to CFG</a>
+      <a class="nav-item" onclick="switchTab('theory')">Documentation</a>
+    </nav>
+  </header>
+
+  <div class="workspace-grid">
+    
+    <aside class="config-column">
+      
+      <div id="cfg2pda-input" class="input-panel active">
+        <div class="card config-card">
+          <div class="card-title">Context-Free Grammar</div>
+          
+          <div class="toolbar">
+            <span class="toolbar-label">Examples</span>
+            <select class="template-dropdown" onchange="loadExample(this.value)">
+              <option value="default">Default (0BB, B→0S|1S|0)</option>
+              <option value="anbn">aⁿbⁿ</option>
+              <option value="palindrome">Palindrome</option>
+              <option value="expr">Math Expressions</option>
+              <option value="balanced">Balanced Parentheses</option>
+            </select>
+          </div>
+
+          <div class="toolbar">
+            <span class="toolbar-label">Symbols</span>
+            <div class="icon-control">
+              <button onclick="insertSymbol('cfg-input', '→')">→</button>
+              <button onclick="insertSymbol('cfg-input', '|')">|</button>
+              <button onclick="insertSymbol('cfg-input', 'ε')">ε</button>
+
+
+            </div>
+          </div>
+
+          <div class="input-wrapper">
+            <textarea id="cfg-input" rows="6" placeholder="S → aSb | ε"></textarea>
+          </div>
+
+          <div class="action-row">
+            <button class="btn-primary" onclick="convertCFGtoPDA()">Generate PDA</button>
+            <button class="btn-secondary" onclick="clearCFG()">Reset</button>
+          </div>
+          <div id="cfg-error" class="error-container"></div>
+        </div>
+
+        <div class="card info-card">
+          <div class="card-title">CFG Definition</div>
+          <div id="cfg-parsed-out" class="empty-state">System ready for grammar input...</div>
+        </div>
+      </div>
+
+      <div id="pda2cfg-input" class="input-panel">
+        <div class="card config-card">
+          <div class="card-title">Pushdown Automaton</div>
+          
+          <div class="toolbar">
+            <span class="toolbar-label">Examples</span>
+            <select class="template-dropdown" onchange="loadPDAExample(this.value)">
+              <option value="anbn">aⁿbⁿ Automaton</option>
+              <option value="simple">Simple Machine</option>
+              <option value="palindrome">Palindrome PDA</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label>State Definitions</label>
+            <input type="text" id="pda-states" placeholder="e.g. q0,q1,q2">
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label>Start State</label>
+              <input type="text" id="pda-start" placeholder="q0">
+            </div>
+            <div class="form-group">
+              <label>Accept States</label>
+              <input type="text" id="pda-accept" placeholder="q2">
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+              <label>Transition Rules (q,a,X → r,Y)</label>
+              <div class="icon-control mini">
+                <button onclick="insertSymbol('pda-trans-input', '→')">→</button>
+                <button onclick="insertSymbol('pda-trans-input', 'ε')">ε</button>
+              </div>
+            </div>
+            <textarea id="pda-trans-input" rows="5" placeholder="q0,a,Z → q0,AZ" style="margin-top: 8px;"></textarea>
+          </div>
+          
+          <div class="action-row">
+            <button class="btn-primary" onclick="convertPDAtoCFG()">Synthesize CFG</button>
+            <button class="btn-secondary" onclick="clearPDA()">Reset</button>
+          </div>
+          <div id="pda-error" class="error-container"></div>
+        </div>
+      </div>
+
+      <div id="theory-input" class="input-panel">
+        <div class="card config-card">
+          <div class="card-title">Theoretical Basis</div>
+          <p class="doc-text">This tool leverages Sipser's algorithmic proofs to establish strict equivalence between Context-Free Languages and Pushdown Automata.</p>
+        </div>
+      </div>
+
+    </aside>
+
+    <main class="viz-column">
+      
+      <div id="cfg2pda-output" class="output-panel active">
+        <div id="cfg-empty-state" class="huge-empty-state">
+          <div class="empty-icon">⌘</div>
+          <h3>Workspace Empty</h3>
+          <p>Generate a PDA to begin interactive visualization.</p>
+        </div>
+        
+        <div id="pda-result" class="dashboard-stack" style="display: none;">
+          
+          <div class="dash-row layout-1-2">
+            
+            <div class="card step-card">
+              <div id="sd-title" class="step-title">—</div>
+              <div id="sd-body" class="step-desc">—</div>
+            </div>
+
+            <div class="card canvas-card">
+              <div class="canvas-header">
+                <h3>Automaton Graph</h3>
+                <div class="player-controls">
+                  <button class="icon-btn" id="btn-prev" onclick="prevStep()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+                  </button>
+                  
+                  <button class="icon-btn highlight" id="btn-play-pause" onclick="togglePlayPause()">
+                    <svg id="icon-pause" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+                    <svg id="icon-play" style="display: none;" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                  </button>
+
+                  <span id="step-nav" class="step-badge"></span>
+                  <button class="icon-btn highlight" id="btn-next" onclick="nextStep()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                  </button>
+                </div>
+              </div>
+              <div class="canvas-body" id="vis-wrap-cfg"></div>
+            </div>
+
+          </div>
+
+          <div class="dash-row two-col">
+            
+            <div class="card table-card">
+              <div class="card-title">Transition Matrix</div>
+              <div class="table-scroll">
+                <div id="pda-trans-table"></div>
+              </div>
+            </div>
+
+            <div class="card sim-card">
+              <div class="card-title">String Verifier</div>
+              <div class="sim-input-group">
+                <input type="text" id="sim-input" placeholder="Input string...">
+                <button class="btn-verify" onclick="simulatePDA()">Verify</button>
+              </div>
+              <div id="sim-result" class="sim-output"></div>
+            </div>
+
+          </div>
+
+          <div id="pda-formal" style="display: none;"></div>
+
+        </div>
+      </div>
+
+      <div id="pda2cfg-output" class="output-panel">
+        <div id="pda-empty-state" class="huge-empty-state">
+          <div class="empty-icon">⚗️</div>
+          <h3>Workspace Empty</h3>
+          <p>Synthesize a grammar to view the reduction.</p>
+        </div>
+        
+        <div id="pda2cfg-result-wrap" class="dashboard-stack" style="display: none;">
+          <div class="dash-row">
+            <div class="card result-card" style="flex:1;">
+              <div class="card-title">Extracted Context-Free Grammar</div>
+              <div class="table-scroll lg">
+                <div id="pda2cfg-result"></div>
+              </div>
+            </div>
+          </div>
+          <div class="dash-row">
+            <div class="card log-card" style="flex:1;">
+              <div class="card-title">Triplet Expansion Log</div>
+              <div class="table-scroll">
+                <div id="pda2cfg-steps-inner"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="theory-output" class="output-panel">
+        <div class="dashboard-stack">
+          <div class="dash-row two-col">
+            <div class="card theory-box">
+              <h3>CFG Structure</h3>
+              <p>G = (V, Σ, R, S)</p>
+              <ul>
+                <li><strong>V</strong> : Variables</li>
+                <li><strong>Σ</strong> : Terminals</li>
+                <li><strong>R</strong> : Production Rules</li>
+                <li><strong>S</strong> : Start Variable</li>
+              </ul>
+            </div>
+            <div class="card theory-box">
+              <h3>PDA Structure</h3>
+              <p>P = (Q, Σ, Γ, δ, q₀, F)</p>
+              <ul>
+                <li><strong>Q</strong> : States</li>
+                <li><strong>Γ</strong> : Stack Alphabet</li>
+                <li><strong>δ</strong> : Transition Function</li>
+                <li><strong>F</strong> : Accept States</li>
+              </ul>
+            </div>
+          </div>
+          <div class="dash-row">
+            <div class="card process-card" style="flex:1;">
+              <h3>Reduction Algorithm</h3>
+              <div class="process-track">
+                <div class="p-step"><span>1</span> Structuring states</div>
+                <div class="p-step"><span>2</span> Stack Initialization</div>
+                <div class="p-step"><span>3</span> Rule Expansion</div>
+                <div class="p-step"><span>4</span> Terminal Matching</div>
+                <div class="p-step"><span>5</span> Empty Stack Acceptance</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
