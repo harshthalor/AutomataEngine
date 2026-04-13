@@ -6,7 +6,6 @@ let currentCFG = null;
 let conversionSteps = []; 
 let activeStep = 0;
 
-// NEW AUTOPLAY VARIABLES
 let autoplayTimer = null;
 let isPlaying = false;
 
@@ -14,7 +13,7 @@ let isPlaying = false;
 // UTILITIES
 // =========================================================
 function switchTab(id) {
-  stopAutoplay(); // Stop playing if user navigates away
+  stopAutoplay();
   
   document.querySelectorAll('.nav-item').forEach(el => {
     el.classList.toggle('active', el.getAttribute('onclick').includes(id));
@@ -42,6 +41,48 @@ function insertSymbol(elementId, symbol) {
   el.focus();
 }
 
+// NEW: Updated to scroll columns back to the top smoothly
+function loadAndRunCFG(exampleId) {
+  switchTab('cfg2pda'); // Move user to correct tab
+  
+  const dropdown = document.getElementById('cfg-dropdown');
+  if(dropdown) dropdown.value = exampleId; // Sync dropdown
+  
+  loadExample(exampleId); // Load the text
+  convertCFGtoPDA(); // Execute immediately
+  
+  // Scroll the visualization and config columns to the top
+  const vizCol = document.querySelector('.viz-column');
+  const configCol = document.querySelector('.config-column');
+  
+  if (vizCol) vizCol.scrollTo({ top: 0, behavior: 'smooth' });
+  if (configCol) configCol.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// =========================================================
+// MODAL LOGIC
+// =========================================================
+function openSimModal() {
+  const modal = document.getElementById('sim-modal');
+  modal.style.display = 'flex';
+  setTimeout(() => {
+    modal.classList.add('active');
+    document.getElementById('sim-input').focus();
+  }, 10);
+}
+
+function closeSimModal() {
+  const modal = document.getElementById('sim-modal');
+  modal.classList.remove('active');
+  setTimeout(() => {
+    modal.style.display = 'none';
+  }, 200);
+}
+
+document.getElementById('sim-modal').addEventListener('click', function(e) {
+  if(e.target === this) closeSimModal();
+});
+
 // =========================================================
 // CFG PARSER
 // =========================================================
@@ -66,7 +107,6 @@ function parseCFG(text){
 
 function tokenizeRHS(s){
   if(!s || s==='ε' || s==='eps') return [];
-  // Support for 0 and 1 as terminals, along with lowercase letters
   return s.split(/\s+/).flatMap(tok => {
     if(!tok) return [];
     if(tok.match(/^[A-Z][A-Z0-9']*$/)) return [tok];
@@ -90,7 +130,6 @@ function convertCFGtoPDA(){
   currentPDA = pda;
   conversionSteps = buildConversionSteps(cfg, pda);
   
-  // Update generated transition output panel
   const panel = document.getElementById('pda-output-panel');
   panel.innerHTML = `
     <div class="def-box" style="margin-bottom: 12px; font-family: var(--font-mono); font-weight: bold; font-size: 11px; background: var(--bg-main); padding: 8px; border-radius: 6px; border: 1px solid var(--border-light);">
@@ -105,10 +144,10 @@ function convertCFGtoPDA(){
         </div>`).join('')}
     </div>`;
 
-  // Clear String Verifier states
   document.getElementById('sim-input').value = '';
-  document.getElementById('sim-result').innerHTML = `<div style="text-align:center;margin-top:10px;color:var(--text-muted);font-family:var(--font-mono);font-size:11px">Ready for verification.</div>`;
+  document.getElementById('sim-result').innerHTML = `<div style="text-align:center;margin-top:20px;color:var(--text-muted);font-family:var(--font-mono);font-size:11px">Ready for verification.</div>`;
 
+  document.getElementById('btn-open-sim').style.display = 'flex';
   document.getElementById('cfg-empty-state').style.display = 'none';
   document.getElementById('pda-result').style.display = 'flex';
 
@@ -116,7 +155,7 @@ function convertCFGtoPDA(){
   document.getElementById('pda-trans-table').innerHTML = buildTransTable(pda);
   
   selectStep(0); 
-  startAutoplay(); // Automatically start playing when generated
+  startAutoplay(); 
 }
 
 function buildPDAFromCFG(cfg){
@@ -173,21 +212,19 @@ function buildConversionSteps(cfg, pda){
 // =========================================================
 // NAVIGATION, VISUALS & AUTOPLAY
 // =========================================================
-
-// --- NEW AUTOPLAY FUNCTIONS ---
 function startAutoplay() {
-  clearInterval(autoplayTimer); // Clear any existing
+  clearInterval(autoplayTimer);
   isPlaying = true;
   document.getElementById('icon-pause').style.display = 'block';
   document.getElementById('icon-play').style.display = 'none';
   
   autoplayTimer = setInterval(() => {
     if (activeStep < conversionSteps.length - 1) {
-      nextStep(false); // false means 'triggered by autoplay'
+      nextStep(false);
     } else {
       stopAutoplay();
     }
-  }, 1500); // 1.5 second interval
+  }, 1500);
 }
 
 function stopAutoplay() {
@@ -201,12 +238,10 @@ function togglePlayPause() {
   if (isPlaying) {
     stopAutoplay();
   } else {
-    // If at the end, restart from 0
     if (activeStep === conversionSteps.length - 1) selectStep(0);
     startAutoplay();
   }
 }
-// ------------------------------
 
 function selectStep(idx){
   activeStep = idx;
@@ -227,14 +262,13 @@ function selectStep(idx){
   highlightTableRows(activeIds, currentIds);
 }
 
-// Modified to accept manual override
 function prevStep() { 
-  stopAutoplay(); // Manual control stops autoplay
+  stopAutoplay(); 
   if (activeStep > 0) selectStep(activeStep - 1); 
 }
 
 function nextStep(isManual = true) { 
-  if (isManual) stopAutoplay(); // Manual control stops autoplay
+  if (isManual) stopAutoplay(); 
   if (activeStep < conversionSteps.length - 1) selectStep(activeStep + 1); 
 }
 
@@ -278,7 +312,6 @@ function drawPDAStep(pda, wrapId, activeIds, currentIds){
     const marker = hasCurrent ? 'url(#arr-active)' : hasActive ? 'url(#arr-solid)' : 'url(#arr-fade)';
 
     if (from === to) {
-      // Loop
       const cx = p1.x, cy = p1.y, loopR = 70;
       out += `<path d="M${cx-25},${cy-R} C${cx-loopR*2},${cy-loopR*3.2} ${cx+loopR*2},${cy-loopR*3.2} ${cx+25},${cy-R}" fill="none" stroke="${eColor}" stroke-width="${eWidth}" marker-end="${marker}"/>`;
       
@@ -291,7 +324,6 @@ function drawPDAStep(pda, wrapId, activeIds, currentIds){
         out += bg + `<text x="${cx}" y="${baseY - li*20}" text-anchor="middle" style="font-size:12px;fill:${cLine};font-family:var(--font-mono);font-weight:${fw}">${t.input},${t.stackTop}/${t.push}</text>`;
       });
     } else {
-      // Straight Arrow
       const dx = p2.x - p1.x, dy = p2.y - p1.y, len = Math.sqrt(dx*dx + dy*dy);
       const x1 = p1.x + dx/len * R, y1 = p1.y + dy/len * R;
       const x2 = p2.x - dx/len * (R+5), y2 = p2.y - dy/len * (R+5);
@@ -366,7 +398,7 @@ function buildFormalDef(pda){
 // =========================================================
 function simulatePDA(){
   if(!currentPDA) {
-    document.getElementById('sim-result').innerHTML = `<div style="text-align:center;margin-top:10px;color:var(--color-danger);font-family:var(--font-mono);font-size:11px;font-weight:bold;">Generate a PDA first.</div>`;
+    document.getElementById('sim-result').innerHTML = `<div style="text-align:center;margin-top:20px;color:var(--color-danger);font-family:var(--font-mono);font-size:12px;font-weight:bold;">Generate a PDA first.</div>`;
     return;
   }
   
@@ -376,13 +408,13 @@ function simulatePDA(){
   let html = '';
   
   if(result.accepted){
-    html += `<div style="display:flex; align-items:center; gap:8px;"><span class="badge badge-green">ACCEPTED</span> <span style="font-size:13px; font-weight:800; color:var(--text-main)">Valid syntax</span></div>`;
+    html += `<div style="display:flex; align-items:center; gap:8px; margin-bottom: 8px;"><span class="badge badge-green">ACCEPTED</span> <span style="font-size:13px; font-weight:800; color:var(--text-main)">Valid syntax</span></div>`;
   } else {
-    html += `<div style="display:flex; align-items:center; gap:8px;"><span class="badge badge-red">REJECTED</span> <span style="font-size:13px; font-weight:800; color:var(--text-main)">Invalid syntax</span></div>`;
+    html += `<div style="display:flex; align-items:center; gap:8px; margin-bottom: 8px;"><span class="badge badge-red">REJECTED</span> <span style="font-size:13px; font-weight:800; color:var(--text-main)">Invalid syntax (Showing furthest path)</span></div>`;
   }
   
   if(result.trace && result.trace.length){
-    html += `<div style="max-height: 150px; overflow-y: auto; margin-top: 12px; border: 2px solid var(--border-dark); border-radius: var(--radius-sm);"><table class="sim-trace" style="margin-top: 0; border: none;"><thead><tr><th style="position: sticky; top: 0;">#</th><th style="position: sticky; top: 0;">State</th><th style="position: sticky; top: 0;">Input Rem</th><th style="position: sticky; top: 0;">Stack (top→)</th></tr></thead><tbody>`;
+    html += `<div style="max-height: 200px; overflow-y: auto; margin-top: 12px; border: 1px solid var(--border-light); border-radius: 8px;"><table class="sim-trace" style="margin-top: 0; border: none;"><thead><tr><th style="position: sticky; top: 0;">#</th><th style="position: sticky; top: 0;">State</th><th style="position: sticky; top: 0;">Input Rem</th><th style="position: sticky; top: 0;">Stack (top→)</th></tr></thead><tbody>`;
     result.trace.forEach((step, i) => {
       html += `<tr><td>${i+1}</td><td>${esc(step.state)}</td><td>${esc(step.input||'ε')}</td><td>${esc(step.stack.slice().reverse().join('')||'ε')}</td></tr>`;
     });
@@ -397,10 +429,19 @@ function runPDA(pda, inputStr){
   const queue = [init]; 
   const visited = new Set();
   
+  let bestRejectTrace = init.trace;
+  let minInputRemaining = input.length;
+  
   for(let iter=0; iter<5000 && queue.length; iter++){
     const cfg = queue.shift();
     const k = `${cfg.state}|${cfg.input.join('')}|${cfg.stack.join('')}`;
     if(visited.has(k)) continue; visited.add(k);
+    
+    if (cfg.input.length < minInputRemaining || (cfg.input.length === minInputRemaining && cfg.trace.length > bestRejectTrace.length)) {
+      minInputRemaining = cfg.input.length;
+      bestRejectTrace = cfg.trace;
+    }
+
     if(pda.accept.includes(cfg.state) && cfg.input.length===0) return {accepted:true, trace:cfg.trace};
     
     for(const t of pda.transitions){
@@ -421,7 +462,7 @@ function runPDA(pda, inputStr){
       if(nt.length < 30) queue.push({state:t.to, input:ni, stack:ns, trace:nt});
     }
   }
-  return {accepted:false, trace:[]};
+  return {accepted:false, trace: bestRejectTrace};
 }
 
 // =========================================================
@@ -512,6 +553,12 @@ const examples = {
 function loadExample(n){ document.getElementById('cfg-input').value = examples[n] || ''; }
 
 const pdaExamples = {
+  default: {
+    states: 'q0,q1,q2', 
+    start: 'q0', 
+    accept: 'q2', 
+    trans: `q0,a,Z → q0,AZ\nq0,a,A → q0,AA\nq0,b,A → q1,ε\nq1,b,A → q1,ε\nq1,ε,Z → q2,Z`
+  },
   anbn: {
     states: 'q0,q1,q2', 
     start: 'q0', 
@@ -547,6 +594,8 @@ function clearCFG(){
   document.getElementById('pda-output-panel').innerHTML = `<div style="text-align:center;margin-top:20px;color:var(--text-muted);font-family:var(--font-mono);font-size:11px">Awaiting CFG Input...</div>`;
   document.getElementById('sim-input').value = '';
   document.getElementById('sim-result').innerHTML = `<div style="text-align:center;margin-top:20px;color:var(--text-muted);font-family:var(--font-mono);font-size:11px">Awaiting CFG Input...</div>`;
+  
+  document.getElementById('btn-open-sim').style.display = 'none';
   document.getElementById('pda-result').style.display = 'none';
   document.getElementById('cfg-empty-state').style.display = 'flex';
   clearErr('cfg-error');
@@ -561,4 +610,4 @@ function clearPDA(){
 
 // Initialize on page load
 loadExample('default');
-// convertCFGtoPDA();
+loadPDAExample('default');
