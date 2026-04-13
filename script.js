@@ -86,23 +86,29 @@ function convertCFGtoPDA(){
   if(!cfg.start){ showErr('cfg-error','No productions found.'); return; }
   currentCFG = cfg;
 
-  let ph = `<div style="font-family:var(--font-mono);font-size:14px;font-weight:800;margin-bottom:12px">Start: <span class="state-pill start">${cfg.start}</span></div>`;
-  ph += `<div class="state-list" style="margin-bottom:12px"><strong style="font-size:12px">V:</strong> ${cfg.variables.map(v=>`<span class="state-pill">${v}</span>`).join('')}</div>`;
-  ph += `<div class="state-list" style="margin-bottom:16px"><strong style="font-size:12px">Σ:</strong> ${cfg.terminals.map(t=>`<span class="state-pill">${t}</span>`).join('')}</div>`;
-  ph += `<div style="background:var(--bg-card); border: 2px solid var(--border-dark); border-radius: var(--radius-sm); padding: 10px;">`;
-  cfg.productions.forEach(p => { 
-    ph += `<div style="font-family:var(--font-mono);font-size:12px;font-weight:700;padding:2px 0;">${p.lhs} → ${p.rhs.length ? p.rhs.join('') : 'ε'}</div>`; 
-  });
-  ph += `</div>`;
-  
-  const parsedOut = document.getElementById('cfg-parsed-out');
-  parsedOut.innerHTML = ph;
-  parsedOut.classList.remove('empty-state');
-
   const pda = buildPDAFromCFG(cfg);
   currentPDA = pda;
   conversionSteps = buildConversionSteps(cfg, pda);
   
+  // Update generated transition output panel
+  const panel = document.getElementById('pda-output-panel');
+  panel.innerHTML = `
+    <div class="def-box" style="margin-bottom: 12px; font-family: var(--font-mono); font-weight: bold; font-size: 11px; background: var(--bg-main); padding: 8px; border-radius: 6px; border: 1px solid var(--border-light);">
+      P = ({q_initial, q_loop, q_final}, Σ, Γ, δ, q_initial, {q_final})
+    </div>
+    <div class="table-scroll" style="font-family:var(--font-mono); font-size:12px; line-height:1.8; padding: 10px; box-shadow: none;">
+      ${pda.transitions.map((t,i) => `
+        <div style="padding: 4px 0; border-bottom: 1px dashed var(--border-light);">
+          <span style="color:var(--text-muted); margin-right: 8px;">${String(i+1).padStart(2,'0')}</span> 
+          δ(<span style="color:var(--accent);font-weight:bold">${t.from}</span>, ${t.input}, ${t.stackTop}) = 
+          (<span style="color:var(--accent);font-weight:bold">${t.to}</span>, <span style="color:#3b82f6;font-weight:bold">${t.push}</span>)
+        </div>`).join('')}
+    </div>`;
+
+  // Clear String Verifier states
+  document.getElementById('sim-input').value = '';
+  document.getElementById('sim-result').innerHTML = `<div style="text-align:center;margin-top:10px;color:var(--text-muted);font-family:var(--font-mono);font-size:11px">Ready for verification.</div>`;
+
   document.getElementById('cfg-empty-state').style.display = 'none';
   document.getElementById('pda-result').style.display = 'flex';
 
@@ -359,7 +365,11 @@ function buildFormalDef(pda){
 // STRING SIMULATOR
 // =========================================================
 function simulatePDA(){
-  if(!currentPDA) return;
+  if(!currentPDA) {
+    document.getElementById('sim-result').innerHTML = `<div style="text-align:center;margin-top:10px;color:var(--color-danger);font-family:var(--font-mono);font-size:11px;font-weight:bold;">Generate a PDA first.</div>`;
+    return;
+  }
+  
   const inputStr = document.getElementById('sim-input').value.trim();
   const result = runPDA(currentPDA, inputStr);
   const div = document.getElementById('sim-result');
@@ -532,9 +542,11 @@ function loadPDAExample(n){
 
 function clearCFG(){
   stopAutoplay();
+  currentPDA = null;
   document.getElementById('cfg-input').value = '';
-  document.getElementById('cfg-parsed-out').innerHTML = 'Awaiting grammar input...';
-  document.getElementById('cfg-parsed-out').classList.add('empty-state');
+  document.getElementById('pda-output-panel').innerHTML = `<div style="text-align:center;margin-top:20px;color:var(--text-muted);font-family:var(--font-mono);font-size:11px">Awaiting CFG Input...</div>`;
+  document.getElementById('sim-input').value = '';
+  document.getElementById('sim-result').innerHTML = `<div style="text-align:center;margin-top:20px;color:var(--text-muted);font-family:var(--font-mono);font-size:11px">Awaiting CFG Input...</div>`;
   document.getElementById('pda-result').style.display = 'none';
   document.getElementById('cfg-empty-state').style.display = 'flex';
   clearErr('cfg-error');
@@ -549,4 +561,4 @@ function clearPDA(){
 
 // Initialize on page load
 loadExample('default');
-convertCFGtoPDA();
+// convertCFGtoPDA();

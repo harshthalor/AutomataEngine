@@ -51,8 +51,6 @@
               <button onclick="insertSymbol('cfg-input', '→')">→</button>
               <button onclick="insertSymbol('cfg-input', '|')">|</button>
               <button onclick="insertSymbol('cfg-input', 'ε')">ε</button>
-
-
             </div>
           </div>
 
@@ -67,9 +65,15 @@
           <div id="cfg-error" class="error-container"></div>
         </div>
 
-        <div class="card info-card">
-          <div class="card-title">CFG Definition</div>
-          <div id="cfg-parsed-out" class="empty-state">System ready for grammar input...</div>
+        <div class="card sim-card">
+          <div class="card-title">String Verifier</div>
+          <div class="sim-input-group">
+            <input type="text" id="sim-input" placeholder="Input string...">
+            <button class="btn-verify" onclick="simulatePDA()">Verify</button>
+          </div>
+          <div id="sim-result" class="sim-output">
+             <div style="text-align:center;margin-top:20px;color:var(--text-muted);font-family:var(--font-mono);font-size:11px">Awaiting CFG Input...</div>
+          </div>
         </div>
       </div>
 
@@ -181,13 +185,14 @@
               </div>
             </div>
 
-            <div class="card sim-card">
-              <div class="card-title">String Verifier</div>
-              <div class="sim-input-group">
-                <input type="text" id="sim-input" placeholder="Input string...">
-                <button class="btn-verify" onclick="simulatePDA()">Verify</button>
+            <div class="card info-card" id="pda-output-panel-container">
+              <div class="card-title">
+                <div class="panel-dot red" style="width:8px;height:8px;background:var(--color-danger);border-radius:50%;margin-right:8px;display:inline-block;"></div>
+                Generated Output
               </div>
-              <div id="sim-result" class="sim-output"></div>
+              <div id="pda-output-panel">
+                 <div style="text-align:center;margin-top:20px;color:var(--text-muted);font-family:var(--font-mono);font-size:11px">Awaiting CFG Input...</div>
+              </div>
             </div>
 
           </div>

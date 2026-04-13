@@ -31,9 +31,7 @@
   
   --font-sans: 'Inter', sans-serif;
   --font-mono: 'Roboto Mono', monospace;
-  --font-sans: 'Inter', sans-serif;
-  --font-mono: 'Roboto Mono', monospace;
-  --font-display: 'Space Grotesk', sans-serif; /* NEW: Display font */
+  --font-display: 'Space Grotesk', sans-serif; 
 }
 .pda-diagram path, .pda-diagram line, .pda-diagram rect {
   transition: all 0.3s ease-in-out;
@@ -357,6 +355,7 @@ textarea:focus, input[type="text"]:focus {
 .process-track { display: flex; gap: 12px; margin-top: 16px; overflow-x: auto; padding-bottom: 8px; }
 .p-step { flex: 1; min-width: 150px; background: var(--bg-main); padding: 16px; border-radius: 8px; font-size: 13px; font-weight: 500; border-top: 3px solid var(--accent); }
 .p-step span { display: block; font-size: 20px; font-weight: 700; color: var(--text-dark); margin-bottom: 8px; }
+
 /* =========================================================
    TYPOGRAPHY UPGRADES (Add to bottom of style.css)
    ========================================================= */
