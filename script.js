@@ -41,22 +41,43 @@ function insertSymbol(elementId, symbol) {
   el.focus();
 }
 
-// NEW: Updated to scroll columns back to the top smoothly
 function loadAndRunCFG(exampleId) {
-  switchTab('cfg2pda'); // Move user to correct tab
+  switchTab('cfg2pda'); 
   
   const dropdown = document.getElementById('cfg-dropdown');
-  if(dropdown) dropdown.value = exampleId; // Sync dropdown
+  if(dropdown) dropdown.value = exampleId; 
   
-  loadExample(exampleId); // Load the text
-  convertCFGtoPDA(); // Execute immediately
+  loadExample(exampleId); 
+  convertCFGtoPDA(); 
   
-  // Scroll the visualization and config columns to the top
   const vizCol = document.querySelector('.viz-column');
   const configCol = document.querySelector('.config-column');
   
   if (vizCol) vizCol.scrollTo({ top: 0, behavior: 'smooth' });
   if (configCol) configCol.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Global variable to handle rapid clicks
+let toastTimeout;
+
+function showToast(message) {
+  const toast = document.getElementById('toast-notification');
+  const msgEl = document.getElementById('toast-message');
+  if(!toast || !msgEl) return;
+  
+  msgEl.textContent = message;
+  
+  // Reset animation if already showing
+  toast.classList.remove('show');
+  clearTimeout(toastTimeout);
+  
+  // Small delay to allow DOM to register the class removal
+  setTimeout(() => {
+    toast.classList.add('show');
+    toastTimeout = setTimeout(() => {
+      toast.classList.remove('show');
+    }, 3500);
+  }, 10);
 }
 
 // =========================================================
@@ -154,13 +175,17 @@ function convertCFGtoPDA(){
   document.getElementById('pda-formal').innerHTML = buildFormalDef(pda);
   document.getElementById('pda-trans-table').innerHTML = buildTransTable(pda);
   
+  // Triggering the visual popup
+  showToast('CFG to PDA Generated Successfully!');
+  
   selectStep(0); 
   startAutoplay(); 
 }
 
 function buildPDAFromCFG(cfg){
   const transitions = [];
-  transitions.push({id:'init', from:'q_initial', input:'ε', stackTop:'ε', to:'q_loop', push:cfg.start+'$', step:1, desc:`Push start var ${cfg.start} & bottom $`});
+  // Swapped $ to Z₀
+  transitions.push({id:'init', from:'q_initial', input:'ε', stackTop:'ε', to:'q_loop', push:cfg.start+'Z₀', step:1, desc:`Push start var ${cfg.start} & bottom Z₀`});
   
   cfg.productions.forEach((p,i) => {
     const pushStr = p.rhs.length ? [...p.rhs].reverse().join('') : 'ε';
@@ -171,11 +196,12 @@ function buildPDAFromCFG(cfg){
     transitions.push({id:`term_${a}`, from:'q_loop', input:a, stackTop:a, to:'q_loop', push:'ε', step:3, desc:`Match '${a}'`});
   });
   
-  transitions.push({id:'accept', from:'q_loop', input:'ε', stackTop:'$', to:'q_final', push:'ε', step:4, desc:'Accept on empty stack'});
+  // Swapped $ to Z₀
+  transitions.push({id:'accept', from:'q_loop', input:'ε', stackTop:'Z₀', to:'q_final', push:'ε', step:4, desc:'Accept on empty stack'});
   
   return {
     states:['q_initial','q_loop','q_final'], start:'q_initial', accept:['q_final'], 
-    inputAlphabet:cfg.terminals, stackAlphabet:['$', cfg.start, ...cfg.variables, ...cfg.terminals], transitions
+    inputAlphabet:cfg.terminals, stackAlphabet:['Z₀', cfg.start, ...cfg.variables, ...cfg.terminals], transitions
   };
 }
 
@@ -187,7 +213,7 @@ function buildConversionSteps(cfg, pda){
   });
   steps.push({
     title:'Step 2: Initialize Stack', badge:'INIT', transIds:['init'],
-    detail:`δ(q_initial, ε, ε) = (q_loop, ${cfg.start}$)\nPush bottom marker ($) then start variable (${cfg.start}). Stack is now: [${cfg.start}, $]`
+    detail:`δ(q_initial, ε, ε) = (q_loop, ${cfg.start}Z₀)\nPush bottom marker (Z₀) then start variable (${cfg.start}). Stack is now: [${cfg.start}, Z₀]`
   });
   cfg.productions.forEach((p,i) => {
     const pushStr = p.rhs.length ? p.rhs.join('') : 'ε';
@@ -204,8 +230,14 @@ function buildConversionSteps(cfg, pda){
   });
   steps.push({
     title:'Step 5: Accept', badge:'FINISH', transIds:['accept'],
-    detail:`δ(q_loop, ε, $) = (q_final, ε)\nWhen stack bottoms out ($), derivation is complete. Accept input.`
+    detail:`δ(q_loop, ε, Z₀) = (q_final, ε)\nWhen stack bottoms out (Z₀), derivation is complete. Accept input.`
   });
+  
+  steps.push({
+    title: 'Step 6: Formal Definition', badge: 'FORMAL DEF', transIds: [],
+    detail: `Q: { ${pda.states.join(', ')} }\nΣ: { ${pda.inputAlphabet.join(', ')} }\nΓ: { ${pda.stackAlphabet.join(', ')} }\nq₀: ${pda.start}\nF: { ${pda.accept.join(', ')} }`
+  });
+  
   return steps;
 }
 
@@ -503,6 +535,9 @@ function convertPDAtoCFG(){
   
   document.getElementById('pda-empty-state').style.display = 'none';
   document.getElementById('pda2cfg-result-wrap').style.display = 'flex';
+  
+  // Triggering the visual popup
+  showToast('PDA to CFG Synthesized Successfully!');
 }
 
 function pdaTripleConstruction(states, start, accepts, trans){

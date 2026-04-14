@@ -11,6 +11,11 @@
 </head>
 <body>
   
+  <div id="toast-notification" class="toast">
+    <div class="toast-icon">✓</div>
+    <div class="toast-message" id="toast-message">Generation Successful</div>
+  </div>
+
   <header class="top-nav">
     <div class="nav-brand">
       <div class="brand-logo">
@@ -269,10 +274,10 @@
               <h3>Reduction Algorithm Steps (CFG to PDA)</h3>
               <div class="process-track">
                 <div class="p-step"><span>1</span> Structuring states<br><small>Create start, loop, and accept states.</small></div>
-                <div class="p-step"><span>2</span> Stack Initialization<br><small>Push $ and Start variable S.</small></div>
+                <div class="p-step"><span>2</span> Stack Initialization<br><small>Push Z₀ and Start variable S.</small></div>
                 <div class="p-step"><span>3</span> Rule Expansion<br><small>Substitute variables via ε-transitions.</small></div>
                 <div class="p-step"><span>4</span> Terminal Matching<br><small>Pop terminals matching input characters.</small></div>
-                <div class="p-step"><span>5</span> Accept Mode<br><small>Accept on an empty stack ($).</small></div>
+                <div class="p-step"><span>5</span> Accept Mode<br><small>Accept on an empty stack (Z₀).</small></div>
               </div>
             </div>
           </div>
